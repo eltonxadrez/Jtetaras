@@ -10,7 +10,7 @@ public class Regra implements Entity, Runnable {
 	
 	public Board board;
 	
-	public int velocidadeQueda = 300000;
+	public int velocidadeQueda = 10;
 	public int idList = 0;
 	public boolean gameOver = false;
 	private volatile boolean rodarLoop = true;
@@ -72,15 +72,19 @@ public class Regra implements Entity, Runnable {
 //		System.out.println("TICK");
 		if(!this.board.pecaCaindo && !this.gameOver) {
 //			System.out.println("TICK2");
-			if(this.adicionarPeca(new Peca(4, initialBlocoX, TipoPeca.BLOCO_QUADRADO, this.idList))) {
-//			if(this.adicionarPeca(criarPecaAleatoria())) {
+			//debugOnly
+//			if(this.adicionarPeca(new Peca(4, initialBlocoX, TipoPeca.BLOCO_QUADRADO, this.idList))) {
+			if(this.adicionarPeca(criarPecaAleatoria())) {
 //				System.out.println("TICK3");
 				this.idList++;
 				this.board.pecaCaindo = true;
-				this.initialBlocoX += 2;
-				if(this.initialBlocoX >= 10) {
-					this.initialBlocoX = 0;
-				}
+				
+				//debugOnly
+//				this.initialBlocoX += 2;
+//				if(this.initialBlocoX >= 10) {
+//					this.initialBlocoX = 0;
+//				}
+				
 //				try {
 //					Thread.sleep(50);
 //				} catch (InterruptedException e) {

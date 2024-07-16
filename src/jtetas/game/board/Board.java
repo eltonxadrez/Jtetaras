@@ -386,11 +386,11 @@ public class Board implements Concreto {
 			ListIterator<Unidade> itUnidade = peca.unidades.listIterator();
 			while(itUnidade.hasNext()) {
 				if(itUnidade.next().y == linha) {
-					System.out.println("LINHA DELETADA");
 					itUnidade.remove();
 				}					
 			}
 		}
+		System.out.println("LINHA DELETADA");
 	}	
 	//verifica colisao do board no eixo Y + 1
 	private boolean isFreeToMoveYP() {
@@ -415,7 +415,7 @@ public class Board implements Concreto {
 	//REFATORAR PARA PUXAR DO CLONE
 	public void updateBoard(char[][] board) {
 //		lock.writeLock().lock();
-		lock.readLock().lock();
+//		lock.readLock().lock();
 		this.cleanBoardM(board);
 		for (Peca peca : this.pecas) {
 			for (Unidade unidade : peca.unidades) {
