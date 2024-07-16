@@ -33,6 +33,7 @@ public class Game implements Runnable{
 		this.board = new Board(this.y, this.x);
 		
 		this.regra = new Regra(board);
+		this.board.regra = this.regra;
 		this.entidades.add(regra);
 		new Thread(regra).start();
 		
@@ -43,6 +44,7 @@ public class Game implements Runnable{
 		
 		this.teclado = new Teclado(regra);
 		this.renderizador.addKeyListener(teclado);
+		this.renderizador.requestFocusInWindow();
 //		this.janela.addKeyListener(teclado);
 		
 	}
@@ -55,13 +57,13 @@ public class Game implements Runnable{
 
 	@Override
 	public void run() {
-		
+		Thread.currentThread().setName("TRD-RENDERIZADOR");
 		while(true) {
 			
 			this.renderizador.render();
 			
 			try {
-				Thread.sleep(1000/60);
+				Thread.sleep(1000/120);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

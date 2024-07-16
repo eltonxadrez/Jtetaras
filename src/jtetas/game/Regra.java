@@ -10,10 +10,13 @@ public class Regra implements Entity, Runnable {
 	
 	public Board board;
 	
-	public int velocidadeQueda = 1;
+	public int velocidadeQueda = 300000;
 	public int idList = 0;
 	public boolean gameOver = false;
 	private volatile boolean rodarLoop = true;
+	
+	//debugOnly
+	private int initialBlocoX = 0;
 	
 	public ArrayList<Peca> bolsaPeca;
 	
@@ -35,7 +38,7 @@ public class Regra implements Entity, Runnable {
 		Peca pecaAleatoria = null;
 		int numeroAleatorio = (int) ((Math.random() * (8 - 1)) + 1);
 		
-		System.out.println(numeroAleatorio);
+//		System.out.println(numeroAleatorio);
 		
 		switch (numeroAleatorio) {
 		case 1: 
@@ -66,20 +69,27 @@ public class Regra implements Entity, Runnable {
 	//REFATORAR
 	@Override
 	public void tick() {
+//		System.out.println("TICK");
 		if(!this.board.pecaCaindo && !this.gameOver) {
-			if(this.adicionarPeca(new Peca(4, 4, TipoPeca.BLOCO_PALITO, this.idList))) {
+//			System.out.println("TICK2");
+			if(this.adicionarPeca(new Peca(4, initialBlocoX, TipoPeca.BLOCO_QUADRADO, this.idList))) {
 //			if(this.adicionarPeca(criarPecaAleatoria())) {
-				
+//				System.out.println("TICK3");
 				this.idList++;
-				this.board.pecaCaindo = true;	
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				this.board.pecaCaindo = true;
+				this.initialBlocoX += 2;
+				if(this.initialBlocoX >= 10) {
+					this.initialBlocoX = 0;
 				}
+//				try {
+//					Thread.sleep(50);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 			}
 			else {
+//				System.out.println("TICK4");
 				this.board.pecaYP();
 				this.gameOver = true;
 				System.out.println("GAME OVER");
@@ -87,22 +97,24 @@ public class Regra implements Entity, Runnable {
 		}
 		//fazer algo no game over
 		else if(this.gameOver) {
+//			System.out.println("TICK5");
 			this.finalizarThread();
 			System.out.println("GAME OVER");
 		}
 		else {
-			System.out.println(" ");
-			System.out.println("y" + this.board.pecaAtual.y + "x" + this.board.pecaAtual.x);
+//			System.out.println("TICK6");
 			this.board.pecaYP();
 		}
 	}
 	
 	public boolean adicionarPeca(Peca peca) {
+//		System.err.println("ADICIONAR PECA - REGRA");
 		return this.board.adicionarPeca(peca);
 	}
 
 	@Override
 	public void run() {
+		Thread.currentThread().setName("TRD-REGRA");
 		try {
 			Thread.sleep(500);
 		} catch (Exception e) {
@@ -113,7 +125,7 @@ public class Regra implements Entity, Runnable {
 			tick();
 			try {
 				
-				Thread.sleep(10000/5);
+				Thread.sleep(10000/velocidadeQueda);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

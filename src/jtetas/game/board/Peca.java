@@ -1,10 +1,12 @@
 package jtetas.game.board;
 
 import java.util.ArrayList;
+//import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Peca {
 	
 	public ArrayList<Unidade> unidades;
+//	public CopyOnWriteArrayList<Unidade> unidades;
 	
 	public int id;
 	public int y;
@@ -12,6 +14,7 @@ public class Peca {
 	public TipoPeca tipoPeca;
 	
 	public Peca() {
+//		this.unidades = new CopyOnWriteArrayList<Unidade>();
 		this.unidades = new ArrayList<Unidade>();
 	}
 
@@ -22,6 +25,7 @@ public class Peca {
 		this.x = x;
 		this.tipoPeca = tipoPeca;
 		
+//		this.unidades = new CopyOnWriteArrayList<Unidade>();
 		this.unidades = new ArrayList<Unidade>();
 		
 		switch (tipoPeca) {
@@ -59,7 +63,7 @@ public class Peca {
 	//  0, 0 C   0,+1 B  0,+2 A
 	// +1, 0 D
 	
-	//  X X X 0 0
+	//  X E X 0 0
 	//  X 0 0 0 0 
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
@@ -125,7 +129,7 @@ public class Peca {
 	//  	   0,+1  0,+2
 	// +1, 0  +1,+1
 	
-	//  0 R X 0 0
+	//  0 E X 0 0
 	//  X X 0 0 0 
 	//  0 0 0 0 0 
 	//  0 X 0 0 0 
@@ -137,17 +141,16 @@ public class Peca {
 	//  0 0 0 0 0 
 	
 	public void criarBlocoN() {
-		criarUnidade(y, x + 1, 1, false);
+		criarUnidade(y, x + 1, 1, true);
 		criarUnidade(y, x + 2, 2, false);
-		criarUnidade(y + 1, x, 3, true);
+		criarUnidade(y + 1, x, 3, false);
 		criarUnidade(y + 1, x + 1, 4, false);
 	}
 	
 	// 05 PECA NI
 	
-	//  0, 0
-	// +1, 0  +1,+1
-	//		  +2,+2  
+	//  0, 0  +1, 0
+	//   	  +1,+1  +1,+2  
 	
 	//  X R 0 0 0
 	//  0 X X 0 0 
@@ -161,9 +164,9 @@ public class Peca {
 	
 	public void criarBlocoNI() {
 		criarUnidade(y, x, 1, false);
-		criarUnidade(y + 1, x, 2, false);
-		criarUnidade(y + 1, x + 1, 3, true);
-		criarUnidade(y + 2, x + 1, 4, false);
+		criarUnidade(y, x + 1, 2, true);
+		criarUnidade(y + 1, x + 1, 3, false);
+		criarUnidade(y + 1, x + 2, 4, false);
 	}
 	
 	// 06 PECA T
@@ -171,7 +174,7 @@ public class Peca {
 	//  0, 0   0,+1   0,+2
 	//        +1,+1  
 	
-	//  X X X 0 0
+	//  X E X 0 0
 	//  0 X 0 0 0 
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
@@ -195,25 +198,8 @@ public class Peca {
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
-	//  X X R X 0
+	//  X X E X 0
 	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	//  0 0 0 0 0 
-	
-	// 07 PECA PALITO
-	
-    //  4, 0  4,+1  4,+2  4,+3
-	
-	//  0 0 0 0 0
-	//  0 0 X 0 0
-	//  0 0 X 0 0
-	//  0 0 R 0 0
-	//  0 0 X 0 0 
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
 	//  0 0 0 0 0 
@@ -239,6 +225,14 @@ public class Peca {
 			pecaClone.unidades.add(unidade.clonarUnidade());
 		}
 		return pecaClone;
+	}
+	
+	public ArrayList<Unidade> clonarUnidades(){
+		ArrayList<Unidade> unidades = new ArrayList<Unidade>();
+		for(Unidade unidade : this.unidades) {
+			unidades.add(unidade.clonarUnidade());
+		}
+		return unidades;
 	}
 
 }

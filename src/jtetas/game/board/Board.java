@@ -3,14 +3,23 @@ package jtetas.game.board;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.ListIterator;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+//import java.util.concurrent.CopyOnWriteArrayList;
 
+import jtetas.game.Regra;
 import jtetas.graphics.Concreto;
 
 public class Board implements Concreto {
 	
+	public Regra regra;
+	
 	public char[][] boardM;
 	public char[][] cBoardM;
 	public ArrayList<Peca> pecas;
+//	CopyOnWriteArrayList<Peca> pecas;// = new CopyOnWriteArrayList<T>();
+	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	public char vazio = 'v';
 	public char ocupado = 'o';
@@ -29,6 +38,7 @@ public class Board implements Concreto {
 	public Peca pecaAtual;
 	public Peca pecaProx;
 	public boolean palitoRotate;
+	private boolean boardTravado;
 
 	public Board(int y, int x) {
 		this.y = y;
@@ -40,9 +50,11 @@ public class Board implements Concreto {
 		this.createBoardM(y, x);
 		this.createCBoardM(y, x);
 		
+//		this.pecas = new CopyOnWriteArrayList<Peca>();
 		this.pecas = new ArrayList<Peca>();
 		this.pecaCaindo = false;
 		this.palitoRotate = true;
+		this.boardTravado = false;
 	}
 	
 	public void createCBoardM(int y, int x) {
@@ -68,18 +80,20 @@ public class Board implements Concreto {
 	}
 	
 	public boolean adicionarPeca(Peca peca) {
-		System.out.println("ADICIONA PECA NO BOARD");
-		System.out.println("ATUALIZA CLONE BOARD");
+		
+//		System.out.println("ADICIONA PECA NO BOARD");
+//		System.out.println("ATUALIZA CLONE BOARD");
 		this.pecaAtual = peca;
 		this.updateBoard(cBoardM);
 		if(this.adicionarPecaNoBoard(peca)) {
 			this.pecas.add(peca);
-			System.out.println("add true");
+//			System.out.println("add true");
 			return true;
 		}
 		else {
 			this.pecas.add(peca);
-			System.out.println("add false");
+//			System.err.println("ADICIONAR PECA FALSE - BOARD");
+			this.boardTravado = true;
 			return false;			
 		}
 	}
@@ -87,16 +101,16 @@ public class Board implements Concreto {
 	//verifica se pode adicionar peca
 	private boolean adicionarPecaNoBoard(Peca peca) {
 		if(this.pecaAtual != null) {
-			System.out.println("is not null XX");
+//			System.out.println("is not null XX");
 			for (Unidade unidade : this.pecaAtual.unidades) {
 				if(this.cBoardM[unidade.y][(unidade.x)] == this.ocupado) {
-					System.out.println(this.cBoardM[unidade.y][(unidade.x)] + "/*-");
-					System.out.println("add b false");
+//					System.out.println(this.cBoardM[unidade.y][(unidade.x)] + "/*-");
+//					System.out.println("add b false");
 					return false;
 				}
 			}
 		}
-		System.out.println("add b true");
+//		System.out.println("add b true");
 		return true;
 	}
 	
@@ -132,13 +146,26 @@ public class Board implements Concreto {
 			}
 			this.calculoRotacao(angleDegrees);
 			return false;
+		}//this.pecaAtual.tipoPeca == TipoPeca.BLOCO_N
+		if(this.pecaAtual.tipoPeca == TipoPeca.BLOCO_N || this.pecaAtual.tipoPeca == TipoPeca.BLOCO_NI) {
+			int angleDegrees = 0;
+			if(this.palitoRotate) {
+				angleDegrees = -90;
+				this.palitoRotate = false;
+			}
+			else {
+				angleDegrees = 90;
+				this.palitoRotate = true;
+			}
+			this.calculoRotacao(angleDegrees);
+			return false;
 		}
 		return true;
 	}
 	
 	private void calculoRotacao(int angleDegrees) {
 		
-		Peca clonePecaL = this.pecaAtual.clonarPeca();
+		Peca pecaClone = this.pecaAtual.clonarPeca();
 		
 		// fator de escala para manter precisão em aritmética fixa
         int scaleFactor = 10000;
@@ -149,7 +176,7 @@ public class Board implements Concreto {
         
         Unidade unidadeAlterRot = null;
         
-		for (Unidade unidade : pecaAtual.unidades) {
+		for (Unidade unidade : pecaClone.unidades) {
 			if(unidade.isRotateCenter) {
 				unidadeAlterRot = unidade;
 			}
@@ -160,7 +187,7 @@ public class Board implements Concreto {
 			int pivotY = unidadeAlterRot.y;
 			
 			// Rotacionar cada ponto em torno do ponto de pivot
-			for (Unidade unidade : pecaAtual.unidades) {
+			for (Unidade unidade : pecaClone.unidades) {
 				// Subtrai as coordenadas do ponto de pivot
 				int x = unidade.x - pivotX;
 				int y = unidade.y - pivotY;
@@ -175,9 +202,29 @@ public class Board implements Concreto {
 			}
 		}
 		
-		if(isFree)
-		//uma peca girada -> pecaAtual
+		if(isFreeBoardRotate(pecaClone)) {
+			this.pecaAtual.unidades = pecaClone.unidades;
+		}
 		
+	}
+	
+	private boolean isFreeBoardRotate(Peca pecaClone) {
+		for (Unidade unidade : pecaClone.unidades) {
+			
+			if(unidade.x >= 10) {
+				return false;
+			}
+			if(unidade.x < 0) {
+				return false;
+			}
+			if(unidade.y >= 24) {
+				return false;
+			}
+			if(this.cBoardM[unidade.y][(unidade.x)] == this.ocupado) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	//X++
@@ -220,7 +267,7 @@ public class Board implements Concreto {
 		}
 	}
 	
-	//verifica colisao do board no eixo X - 1
+	//verifica colisao do board no eixo X - 1	
 	private boolean isFreeToMoveXN() {
 		for (Unidade unidade : pecaAtual.unidades) {
 			if(unidade.x - 1 < 0) {
@@ -241,17 +288,25 @@ public class Board implements Concreto {
 	}
 	
 	public void pecaFP() {
-		while(true) {
-			if(isFreeToMoveYP() && isFreeAYP()) {
-				this.pecaAtual.y += 1;
-				for (Unidade unidade : pecaAtual.unidades) {
-					unidade.y += 1;
-				}	
-			}
-			else {
-				this.pecaCaindo = false;
-				this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_PALITO,99);
-				break;
+		if(!boardTravado) {
+			while(true) {
+				if(isFreeToMoveYP() && isFreeAYP()) {
+					this.pecaAtual.y += 1;
+					for (Unidade unidade : pecaAtual.unidades) {
+						unidade.y += 1;
+					}	
+				}
+				else {
+					this.pecaCaindo = false;
+					updateBoard(cBoardM);
+					verificarLinhaCompletada();
+					updateBoard(cBoardM);
+					this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
+					if(!boardTravado) {
+						this.regra.tick();
+					}
+					break;
+				}
 			}
 		}
 	}
@@ -266,10 +321,77 @@ public class Board implements Concreto {
 		}
 		else {
 			this.pecaCaindo = false;
-			this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_PALITO,99);
+			//delecao de linha
+			updateBoard(cBoardM);
+			verificarLinhaCompletada();
+			updateBoard(cBoardM);
+			
+			this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
+			if(!boardTravado) {
+				this.regra.tick();				
+			}
+		}
+	}
+
+	private void verificarLinhaCompletada() {
+//		int[] linhas = new int[4];
+		ArrayList<Integer> linhas = new ArrayList<Integer>();
+		int shiftDown = 0;
+		int linhaMaisBaixa = 0;
+		for(Unidade unidade : this.pecaAtual.unidades) {
+			boolean linhaCompleta = true;
+			for (int x = 0; x < this.cBoardM[unidade.y].length; x++) {
+				if(cBoardM[unidade.y][x] == vazio) {
+//					System.out.println("ha vazio na linha " + unidade.y + " X -> " + x);
+					linhaCompleta = false;
+					break;
+				}
+			}
+			//remover redundancia de linha
+			if(linhaCompleta) {
+//				System.err.println("A linha Y " + unidade.y + " está completa");
+				if(!linhas.contains(unidade.y)) {
+					linhas.add(unidade.y);					
+					shiftDown++;
+				}
+				if(unidade.y > linhaMaisBaixa) {
+					linhaMaisBaixa = unidade.y;
+				}
+//				System.out.println();
+			}
+			else {
+//				System.out.println("Não está completa a Linha Y " + unidade.y);
+			}
+		}
+		for (Integer linha : linhas) {
+//			System.out.println("deletando linha -> " + linha);
+			deletarLinha(linha);
+		}
+//		System.out.println("quantos shifts down eu preciso fazer? " + shiftDown);
+		shiftDown(shiftDown, linhaMaisBaixa);
+	}
+	
+	private void shiftDown(int shiftDown, int linhaMaisBaixa) {
+		for (Peca peca : pecas) {
+			for (Unidade unidade : peca.unidades) {
+				if(unidade.y <= linhaMaisBaixa) {
+					unidade.y += shiftDown;
+				}
+			}
 		}
 	}
 	
+	private void deletarLinha(Integer linha) {
+		for (Peca peca : pecas) {
+			ListIterator<Unidade> itUnidade = peca.unidades.listIterator();
+			while(itUnidade.hasNext()) {
+				if(itUnidade.next().y == linha) {
+					System.out.println("LINHA DELETADA");
+					itUnidade.remove();
+				}					
+			}
+		}
+	}	
 	//verifica colisao do board no eixo Y + 1
 	private boolean isFreeToMoveYP() {
 		for (Unidade unidade : pecaAtual.unidades) {
@@ -292,6 +414,8 @@ public class Board implements Concreto {
 	
 	//REFATORAR PARA PUXAR DO CLONE
 	public void updateBoard(char[][] board) {
+//		lock.writeLock().lock();
+		lock.readLock().lock();
 		this.cleanBoardM(board);
 		for (Peca peca : this.pecas) {
 			for (Unidade unidade : peca.unidades) {
