@@ -1,6 +1,7 @@
 package jtetas.game;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import jtetas.game.board.Board;
 import jtetas.game.board.Peca;
@@ -10,28 +11,62 @@ public class Regra implements Entity, Runnable {
 	
 	public Board board;
 	
-	public int velocidadeQueda = 10;
+	public int velocidadeQueda = 20;
 	public int idList = 0;
 	public boolean gameOver = false;
+	public boolean pausado = false;
 	private volatile boolean rodarLoop = true;
 	
 	//debugOnly
-	private int initialBlocoX = 0;
+//	private int initialBlocoX = 0;
 	
 	public ArrayList<Peca> bolsaPeca;
 	
 	public Regra(Board board) {
 		this.board = board;
 		this.bolsaPeca = new ArrayList<Peca>();
+		this.board.pecaAtual = puxarDaBolsaPeca();
+		this.board.pecaProx = puxarDaBolsaPeca();
 	}
 	
 	public void finalizarThread() {
 		rodarLoop = false;
 	}
 	
-	private void criarBolsaPeca() {
-		
+	private Peca puxarDaBolsaPeca () {
+		if(bolsaPeca.isEmpty()) {
+//			System.out.println("bolsa vazia criar bolsa");
+			criarBolsaPeca();
+			return puxarPecaRandomDaBolsa();
+		}
+		else {
+//			System.out.println("bolsa cheia retornar peca random da bolsa");
+			return puxarPecaRandomDaBolsa();
+		}
 	}
+	
+	private Peca puxarPecaRandomDaBolsa() {
+		//ajustar
+//		System.out.println("tamanho bolsa " + this.bolsaPeca.size());
+		int numeroSorteado = (int) ((Math.random() * ((this.bolsaPeca.size()-1) - 1)) + 1);
+		Peca pecaPuxada = this.bolsaPeca.get(numeroSorteado);
+		this.bolsaPeca.remove(pecaPuxada);
+		return pecaPuxada;
+	}
+	
+	private void criarBolsaPeca() {
+		for (TipoPeca tipoPeca : TipoPeca.values()) {
+			//entre 3 e 2
+			int quantidade = (int) ((Math.random() * (4 - 2)) + 1);
+			for (int i = 0; i < quantidade; i++) {
+				Peca novaPeca = new Peca(4, 4, tipoPeca, this.idList);
+				this.bolsaPeca.add(novaPeca);
+				this.idList++;
+			}
+		}
+	}
+	
+
 	
 	private Peca criarPecaAleatoria() {
 		
@@ -65,20 +100,27 @@ public class Regra implements Entity, Runnable {
 		}
 		return pecaAleatoria;
 	}
-	
+	public boolean adicionarPeca(Peca peca) {
+//		System.err.println("ADICIONAR PECA - REGRA");
+		return this.board.adicionarPeca(peca);
+	}
 	//REFATORAR
 	@Override
 	public void tick() {
-//		System.out.println("TICK");
 		if(!this.board.pecaCaindo && !this.gameOver) {
-//			System.out.println("TICK2");
 			//debugOnly
 //			if(this.adicionarPeca(new Peca(4, initialBlocoX, TipoPeca.BLOCO_QUADRADO, this.idList))) {
-			if(this.adicionarPeca(criarPecaAleatoria())) {
-//				System.out.println("TICK3");
-				this.idList++;
+//			if(this.adicionarPeca(criarPecaAleatoria())) {
+//			this.board.pecaProx = puxarDaBolsaPeca();
+//			if(this.board.pecaProx == null) {
+//				
+//			}
+			
+			if(this.adicionarPeca(this.board.pecaProx)) {
+				this.board.pecaProx = puxarDaBolsaPeca();
 				this.board.pecaCaindo = true;
-				
+//				System.out.println("PROXIMA PECA " + this.board.pecaProx);
+//				System.out.println("PECA ATUAL " + this.board.pecaAtual);
 				//debugOnly
 //				this.initialBlocoX += 2;
 //				if(this.initialBlocoX >= 10) {
@@ -93,9 +135,9 @@ public class Regra implements Entity, Runnable {
 //				}
 			}
 			else {
-//				System.out.println("TICK4");
 				this.board.pecaYP();
 				this.gameOver = true;
+				this.board.gameOver();
 				System.out.println("GAME OVER");
 			}
 		}
@@ -111,11 +153,29 @@ public class Regra implements Entity, Runnable {
 		}
 	}
 	
-	public boolean adicionarPeca(Peca peca) {
-//		System.err.println("ADICIONAR PECA - REGRA");
-		return this.board.adicionarPeca(peca);
+	public void pausarJogo() {
+		if(pausado) {
+			this.despausarTeste();
+			this.pausado = false;
+		}
+		else { 
+			this.pausado = true;
+		}
 	}
-
+	
+	public synchronized void pausarTeste() {
+		try {
+			wait();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public synchronized void despausarTeste() {
+		notify();
+	}
+	
 	@Override
 	public void run() {
 		Thread.currentThread().setName("TRD-REGRA");
@@ -125,10 +185,11 @@ public class Regra implements Entity, Runnable {
 			e.printStackTrace();
 		}
 		while(rodarLoop) {
-
+			if(pausado) {
+				this.pausarTeste();
+			}
 			tick();
 			try {
-				
 				Thread.sleep(10000/velocidadeQueda);
 			} catch (InterruptedException e) {
 				e.printStackTrace();

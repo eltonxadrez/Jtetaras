@@ -30,7 +30,7 @@ public class Game implements Runnable{
 	private void init() {
 		this.entidades = new ArrayList<Entity>();
 		
-		this.board = new Board(this.y, this.x);
+		this.board = new Board(this.y, this.x, this);
 		
 		this.regra = new Regra(board);
 		this.board.regra = this.regra;
@@ -63,7 +63,7 @@ public class Game implements Runnable{
 			this.renderizador.render();
 			
 			try {
-				Thread.sleep(1000/120);
+				Thread.sleep(1000/75);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

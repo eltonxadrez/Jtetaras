@@ -55,7 +55,7 @@ public class Peca {
 	}
 	
 	private void criarUnidade(int y, int x, int id, boolean isRotateCenter) {
-		this.unidades.add(new Unidade(y, x, id, isRotateCenter));
+		this.unidades.add(new Unidade(y, x, id, isRotateCenter, this));
 	}
 	
 	// 01 PECA L

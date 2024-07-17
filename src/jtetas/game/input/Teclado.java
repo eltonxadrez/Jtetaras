@@ -21,22 +21,37 @@ public class Teclado implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-			this.regra.board.pecaXP();
+			if (!this.regra.pausado){
+				this.regra.board.pecaXP();				
+			}
 		}
 		else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
-			this.regra.board.pecaXN();
+			if (!this.regra.pausado){
+				this.regra.board.pecaXN();				
+			}
 		}
 		if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-			this.regra.board.pecaYP();
+			if (!this.regra.pausado){
+				this.regra.board.pecaYP();				
+			}
 		}
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-			this.regra.board.pecaFP();
+			if (!this.regra.pausado){
+				this.regra.board.pecaFP();				
+			}
 		}
 		if(e.getKeyCode() == KeyEvent.VK_Z) {
-			this.regra.board.pecaTL();
+			if (!this.regra.pausado){
+				this.regra.board.pecaTL();				
+			}
 		}
 		if(e.getKeyCode() == KeyEvent.VK_X) {
-			this.regra.board.pecaTR();
+			if (!this.regra.pausado){
+				this.regra.board.pecaTR();				
+			}
+		}		
+		if(e.getKeyCode() == KeyEvent.VK_P) {
+			this.regra.pausarJogo();
 		}
 	}
 
