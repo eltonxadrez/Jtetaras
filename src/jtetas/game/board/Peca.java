@@ -1,12 +1,10 @@
 package jtetas.game.board;
 
 import java.util.ArrayList;
-//import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Peca {
 	
 	public ArrayList<Unidade> unidades;
-//	public CopyOnWriteArrayList<Unidade> unidades;
 	
 	public int id;
 	public int y;
@@ -14,7 +12,6 @@ public class Peca {
 	public TipoPeca tipoPeca;
 	
 	public Peca() {
-//		this.unidades = new CopyOnWriteArrayList<Unidade>();
 		this.unidades = new ArrayList<Unidade>();
 	}
 
@@ -25,7 +22,6 @@ public class Peca {
 		this.x = x;
 		this.tipoPeca = tipoPeca;
 		
-//		this.unidades = new CopyOnWriteArrayList<Unidade>();
 		this.unidades = new ArrayList<Unidade>();
 		
 		switch (tipoPeca) {

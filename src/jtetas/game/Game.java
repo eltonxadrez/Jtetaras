@@ -3,8 +3,6 @@ package jtetas.game;
 import java.util.ArrayList;
 
 import jtetas.game.board.Board;
-import jtetas.game.board.Peca;
-import jtetas.game.board.TipoPeca;
 import jtetas.game.input.Teclado;
 import jtetas.graphics.Janela;
 import jtetas.graphics.Renderizador;
@@ -43,25 +41,21 @@ public class Game implements Runnable{
 		this.janela = new Janela(this.renderizador);
 		
 		this.teclado = new Teclado(regra);
+		this.regra.teclado = teclado;
+		
 		this.renderizador.addKeyListener(teclado);
 		this.renderizador.requestFocusInWindow();
-//		this.janela.addKeyListener(teclado);
 		
 	}
 	
-//	public void tick() {
-//		for (Entity entity : this.entidades) {
-//			entity.tick();
-//		}
-//	}
-
 	@Override
 	public void run() {
 		Thread.currentThread().setName("TRD-RENDERIZADOR");
 		while(true) {
-			
+			if(this.regra.pausado) {
+				this.regra.pausarTeste();
+			}
 			this.renderizador.render();
-			
 			try {
 				Thread.sleep(1000/75);
 			} catch (InterruptedException e) {

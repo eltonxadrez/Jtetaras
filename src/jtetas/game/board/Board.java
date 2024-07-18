@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 //import java.util.concurrent.CopyOnWriteArrayList;
@@ -22,7 +20,6 @@ public class Board implements Concreto {
 	public char[][] boardM;
 	public char[][] cBoardM;
 	public ArrayList<Peca> pecas;
-//	CopyOnWriteArrayList<Peca> pecas;// = new CopyOnWriteArrayList<T>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	public char vazio = 'v';
@@ -63,7 +60,6 @@ public class Board implements Concreto {
 		this.createBoardM(y, x);
 		this.createCBoardM(y, x);
 		
-//		this.pecas = new CopyOnWriteArrayList<Peca>();
 		this.pecas = new ArrayList<Peca>();
 		this.pecaCaindo = false;
 		this.palitoRotate = true;
@@ -99,9 +95,8 @@ public class Board implements Concreto {
 				this.game.renderizador.render();
 				board[y][x] = caractere;
 				try {
-					Thread.sleep(1000/60);
+					Thread.sleep(1000/60 );
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -109,25 +104,19 @@ public class Board implements Concreto {
 	}
 	
 	public boolean adicionarPeca(Peca peca) {
-		
         lock.writeLock().lock();
         try {
             
         
 		
-//		System.out.println("ADICIONA PECA NO BOARD");
-//		System.out.println("ATUALIZA CLONE BOARD");
-//        	System.out.println("setar peca atual");
         	this.pecaAtual = peca;
         	this.updateBoard(cBoardM);
         	if(this.adicionarPecaNoBoard(peca)) {
         		this.pecas.add(peca);
-//			System.out.println("add true");
         		return true;
         	}
         	else {
         		this.pecas.add(peca);
-//			System.err.println("ADICIONAR PECA FALSE - BOARD");
         		this.boardTravado = true;
         		return false;			
         	}
@@ -139,16 +128,12 @@ public class Board implements Concreto {
 	//verifica se pode adicionar peca
 	private boolean adicionarPecaNoBoard(Peca peca) {
 		if(this.pecaAtual != null) {
-//			System.out.println("is not null XX");
 			for (Unidade unidade : this.pecaAtual.unidades) {
 				if(this.cBoardM[unidade.y][(unidade.x)] == this.ocupado) {
-//					System.out.println(this.cBoardM[unidade.y][(unidade.x)] + "/*-");
-//					System.out.println("add b false");
 					return false;
 				}
 			}
 		}
-//		System.out.println("add b true");
 		return true;
 	}
 	
@@ -184,7 +169,7 @@ public class Board implements Concreto {
 			}
 			this.calculoRotacao(angleDegrees);
 			return false;
-		}//this.pecaAtual.tipoPeca == TipoPeca.BLOCO_N
+		}
 		if(this.pecaAtual.tipoPeca == TipoPeca.BLOCO_N || this.pecaAtual.tipoPeca == TipoPeca.BLOCO_NI) {
 			int angleDegrees = 0;
 			if(this.palitoRotate) {
@@ -335,14 +320,13 @@ public class Board implements Concreto {
 					}	
 				}
 				else {
-					this.pecaCaindo = false;
+					this.pecaCaindo = false;					
+					this.regra.pausarJogo();
 					updateBoard(cBoardM);
 					verificarLinhaCompletada();
 					updateBoard(cBoardM);
 					this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
-//					if(!boardTravado) {
-//						this.regra.tick();
-//					}
+					this.regra.pausarJogo();
 					break;
 				}
 			}
@@ -351,22 +335,27 @@ public class Board implements Concreto {
 	
 	//Y++
 	public void pecaYP() {
-		if(isFreeToMoveYP() && isFreeAYP()) {
-			this.pecaAtual.y += 1;
-			for (Unidade unidade : pecaAtual.unidades) {
-				unidade.y += 1;
-			}			
-		}
-		else {
-			this.pecaCaindo = false;
-			//delecao de linha
-			updateBoard(cBoardM);
-			verificarLinhaCompletada();
-			updateBoard(cBoardM);
-			
-			this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
-			if(!boardTravado) {
-				this.regra.tick();				
+		if(this.pecaCaindo) {
+			if(isFreeToMoveYP() && isFreeAYP()) {
+				this.pecaAtual.y += 1;
+				for (Unidade unidade : pecaAtual.unidades) {
+					unidade.y += 1;
+				}			
+			}
+			else {
+				this.pecaCaindo = false;
+				this.regra.pausarJogo();
+				
+				//delecao de linha
+				updateBoard(cBoardM);
+				verificarLinhaCompletada();
+				updateBoard(cBoardM);
+				
+				this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
+				if(!boardTravado) {
+					this.regra.tick();				
+				}
+				this.regra.pausarJogo();
 			}
 		}
 	}
@@ -404,7 +393,6 @@ public class Board implements Concreto {
  			for (Peca peca : pecas) {
  				for (Unidade unidade : peca.unidades) {
  					if(unidade.y == linha) {
-// 						System.out.println(unidade.y);
  						listaOrganizada.add(unidade);
  					}										
 				}
@@ -415,19 +403,11 @@ public class Board implements Concreto {
 				updateBoard(cBoardM);
 				this.game.renderizador.render();
 				try {
-					Thread.sleep(1000/60);
+					Thread.sleep(1000/5);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-//			ListIterator<Unidade> itUnidade = listaOrganizada.listIterator();
-//			listaOrganizada = null;
-//			while(itUnidade.hasNext()) {
-//				linhaDeletada.add(itUnidade.next());
-//				System.out.println("LINHA DELETADA");
-//				itUnidade.re
-//			}
-//			System.err.println("LINHA DELETADA -> " + linha);
 		shiftDown(linha);
 		} finally {
 			lock.writeLock().unlock();
@@ -435,7 +415,6 @@ public class Board implements Concreto {
 	}	
 	
 	private void shiftDown(Integer linhaMaisBaixa) {
-//		System.out.println("ILHAS MOVER NA LINHA -> " + linhaMaisBaixa);
 		lock.writeLock().lock();
 		try {
 			for (Peca peca : pecas) {
@@ -445,7 +424,6 @@ public class Board implements Concreto {
 					}
 				}
 			}
-//			System.err.println("ILHA MOVIDA");
 			updateBoard(cBoardM);
 		} finally {
 			lock.writeLock().unlock();
@@ -473,8 +451,6 @@ public class Board implements Concreto {
 	
 	//REFATORAR PARA PUXAR DO CLONE
 	public void updateBoard(char[][] board) {
-		System.out.println("att board");
-//		lock.writeLock().lock();
         lock.readLock().lock();
         try {
         	this.cleanBoardM(board);
@@ -490,14 +466,13 @@ public class Board implements Concreto {
 	
 	public void gameOver() {
 		this.gameOver = true;
+		this.pecaProx = null;
 		this.fillBoardTimed(ocupado, this.boardM);
 		this.fillBoardTimed(vazio, this.boardM);
 	}
 	
 	@Override
 	public void render(Graphics graphics) {
-		
-//		System.out.println("ATUALIZA BOARD GRAFICO");
 		if(!gameOver) {
 			updateBoard(this.boardM);
 		}
@@ -529,8 +504,5 @@ public class Board implements Concreto {
 				graphics.drawRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);
 			}
 		}
-//		else {
-//			this.fillBoardTimed(ocupado, this.boardM);
-//		}
 	}
 }
