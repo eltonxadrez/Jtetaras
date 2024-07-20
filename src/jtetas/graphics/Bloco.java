@@ -2,6 +2,7 @@ package jtetas.graphics;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
 public class Bloco extends Rectangle implements Concreto{
@@ -13,9 +14,9 @@ public class Bloco extends Rectangle implements Concreto{
 	}
 
 	@Override
-	public void render(Graphics g) {
-		g.setColor(Color.WHITE);
-		g.fillRect(x, y, width, height);
+	public void render(Graphics2D graphics2d, int janelaWidth, int janelaHeight) {
+		graphics2d.setColor(Color.WHITE);
+		graphics2d.fillRect(x, y, width, height);
 	}
 
 }

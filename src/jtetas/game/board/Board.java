@@ -1,7 +1,10 @@
 package jtetas.game.board;
 
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -11,11 +14,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import jtetas.game.Game;
 import jtetas.game.Regra;
 import jtetas.graphics.Concreto;
+import jtetas.graphics.ImageRepository;
 
-public class Board implements Concreto {
+public class Board implements Concreto, Runnable {
 	
 	public Regra regra;
 	public Game game;
+	
+	public Thread boardThread;
 	
 	public char[][] boardM;
 	public char[][] cBoardM;
@@ -23,39 +29,70 @@ public class Board implements Concreto {
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	public char vazio = 'v';
-	public char ocupado = 'o';
+	public char yellow = 'o';
+	public char cyan = 'i';
+	public char red = 's';
+	public char green = 'z';
+	public char orange = 'l';
+	public char blue = 'j';
+	public char purple = 't';
+	public char white = 'w';
+	
 
 	//tamanho de cada bloco do tabuleiro
-	public int width = 30;
-	public int height = 30;
+//	public int width;
+//	public int height;
 	
-	public int y;
-	public int x;
+//	public int y;
+//	public int x;
 	
-	public int boardPosY;
-	public int boardPosX;
+//	public int boardPosY;
+//	public int boardPosX;
 	
-	public int proxPecaPosX;
-	public int proxPecaPosY;
+//	public int proxPecaPosX;
+//	public int proxPecaPosY;
 	
-	public boolean pecaCaindo;
 	public Peca pecaAtual;
+	public Peca pecaAtualPrevisao;
 	public Peca pecaProx;
+	public boolean pecaCaindo;
 	public boolean palitoRotate;
 	private boolean boardTravado;
 	private boolean gameOver;
+	
+	ImageRepository imageRepository = new ImageRepository();
+	
+	private BufferedImage imgBlockYellow = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_YELLOW);
+	private BufferedImage imgBlockCyan = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_CYAN);
+	private BufferedImage imgBlockRed = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_RED);
+	private BufferedImage imgBlockGreen = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_GREEN);
+	private BufferedImage imgBlockOrange = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_ORANGE);
+	private BufferedImage imgBlockBlue = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_BLUE);
+	private BufferedImage imgBlockPurple = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_PURPLE);
+	private BufferedImage imgBlockBlack = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_BLACK);
+	
 
 	public Board(int y, int x, Game game) {
-		this.y = y;
-		this.x = x;
+//		this.y = y;
+//		this.x = x;
 		
 		this.game = game;
 		
-		this.boardPosY = 2;
-		this.boardPosX = 5;
+//		this.boardPosY = this.game.height / 650;
+//		this.boardPosX = this.game.width / 100;
+//		this.boardPosY = 10;
+//		this.boardPosX = 10;
 		
-		this.proxPecaPosY = 1;
-		this.proxPecaPosX = 12;
+//		int tamanhoBloco = (this.game.height + this.game.width) / 75;
+		
+//		this.width = tamanhoBloco;
+//		this.height = tamanhoBloco;
+		
+//		this.proxPecaPosY = 1;
+//		this.proxPecaPosX = 12;
+		
+//		this.proxPecaPosY = boardPosY - 1;
+//		this.proxPecaPosX = boardPosX + 9;
 		
 		this.createBoardM(y, x);
 		this.createCBoardM(y, x);
@@ -90,26 +127,28 @@ public class Board implements Concreto {
 	}
 	
 	public void fillBoardTimed(char caractere, char[][] board) {
+		this.game.renderizar = false;
 		for (int y = board.length - 1; y >= 0; y--) {
 			for (int x = 0; x < board[0].length; x++) {
 				this.game.renderizador.render();
 				board[y][x] = caractere;
 				try {
-					Thread.sleep(1000/60 );
+					Thread.sleep(100/15);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
 		}
+		this.game.renderizar = true;
 	}
 	
 	public boolean adicionarPeca(Peca peca) {
         lock.writeLock().lock();
         try {
-            
-        
 		
         	this.pecaAtual = peca;
+        	this.pecaAtualPrevisao = peca.clonarPeca();
+        	this.pecaFPPrevisao();
         	this.updateBoard(cBoardM);
         	if(this.adicionarPecaNoBoard(peca)) {
         		this.pecas.add(peca);
@@ -129,7 +168,7 @@ public class Board implements Concreto {
 	private boolean adicionarPecaNoBoard(Peca peca) {
 		if(this.pecaAtual != null) {
 			for (Unidade unidade : this.pecaAtual.unidades) {
-				if(this.cBoardM[unidade.y][(unidade.x)] == this.ocupado) {
+				if(this.cBoardM[unidade.y][(unidade.x)] != this.vazio) {
 					return false;
 				}
 			}
@@ -140,24 +179,29 @@ public class Board implements Concreto {
 	
 	//TURN RIGHT
 	public void pecaTR() {
-		if(isPalito()) {
+		if(isPalito(this.pecaAtual)) {
+//			isPalito(this.pecaAtualPrevisao);
 			// angulo de rotação em graus
 			int angleDegrees = 90;
-			this.calculoRotacao(angleDegrees);			
+			this.calculoRotacao(angleDegrees, this.pecaAtual);	
+			this.calculoRotacao(angleDegrees, this.pecaAtualPrevisao);
+			this.pecaFPPrevisao();
 		}
 	}
 	
 	//TURN LEFT
 	public void pecaTL() {
-		if(isPalito()) {
+		if(isPalito(this.pecaAtual)) {
+//			isPalito(this.pecaAtualPrevisao);
 			// angulo de rotação em graus
 			int angleDegrees = -90;
-			this.calculoRotacao(angleDegrees);
+			this.calculoRotacao(angleDegrees, this.pecaAtual);
+			this.calculoRotacao(angleDegrees, this.pecaAtualPrevisao);
 		}
 	}
 	
-	private boolean isPalito() {
-		if(this.pecaAtual.tipoPeca == TipoPeca.BLOCO_PALITO) {
+	private boolean isPalito(Peca peca) {
+		if(peca.tipoPeca == TipoPeca.BLOCO_PALITO) {
 			int angleDegrees = 0;
 			if(this.palitoRotate) {
 				angleDegrees = 90;
@@ -167,10 +211,11 @@ public class Board implements Concreto {
 				angleDegrees = -90;
 				this.palitoRotate = true;
 			}
-			this.calculoRotacao(angleDegrees);
+			this.calculoRotacao(angleDegrees, this.pecaAtual);
+			this.calculoRotacao(angleDegrees, this.pecaAtualPrevisao);
 			return false;
 		}
-		if(this.pecaAtual.tipoPeca == TipoPeca.BLOCO_N || this.pecaAtual.tipoPeca == TipoPeca.BLOCO_NI) {
+		if(peca.tipoPeca == TipoPeca.BLOCO_N || peca.tipoPeca == TipoPeca.BLOCO_NI) {
 			int angleDegrees = 0;
 			if(this.palitoRotate) {
 				angleDegrees = -90;
@@ -180,16 +225,16 @@ public class Board implements Concreto {
 				angleDegrees = 90;
 				this.palitoRotate = true;
 			}
-			this.calculoRotacao(angleDegrees);
+			this.calculoRotacao(angleDegrees, this.pecaAtual);
+			this.calculoRotacao(angleDegrees, this.pecaAtualPrevisao);
 			return false;
 		}
 		return true;
 	}
 	
-	private void calculoRotacao(int angleDegrees) {
+	private void calculoRotacao(int angleDegrees, Peca peca) {
 		
-		Peca pecaClone = this.pecaAtual.clonarPeca();
-		
+		Peca pecaClone = peca.clonarPeca();
 		// fator de escala para manter precisão em aritmética fixa
         int scaleFactor = 10000;
         
@@ -226,8 +271,10 @@ public class Board implements Concreto {
 		}
 		
 		if(isFreeBoardRotate(pecaClone)) {
-			this.pecaAtual.unidades = pecaClone.unidades;
+			peca.unidades = pecaClone.unidades;
+//			this.pecaAtualPrevisao.unidades = pecaClone.unidades;
 		}
+		this.pecaFPPrevisao();
 		
 	}
 	
@@ -243,7 +290,7 @@ public class Board implements Concreto {
 			if(unidade.y >= 24) {
 				return false;
 			}
-			if(this.cBoardM[unidade.y][(unidade.x)] == this.ocupado) {
+			if(this.cBoardM[unidade.y][(unidade.x)] != this.vazio) { //CUIDADO
 				return false;
 			}
 		}
@@ -253,10 +300,17 @@ public class Board implements Concreto {
 	//X++
 	public void pecaXP() {
 		if(isFreeToMoveXP() && isFreeAXP()) {
-			this.pecaAtual.x += 1;
-			for (Unidade unidade : pecaAtual.unidades) {
-				unidade.x += 1;				
-			}			
+			this.pecaXPM(pecaAtual);
+			this.pecaXPM(pecaAtualPrevisao);
+			this.pecaFPPrevisao();
+			
+		}
+	}
+
+	private void pecaXPM(Peca peca) {
+		peca.x += 1;
+		for (Unidade unidade : peca.unidades) {
+			unidade.x += 1;				
 		}
 	}
 	
@@ -273,7 +327,7 @@ public class Board implements Concreto {
 	//verifica colisao com outras pecas no eixo X + 1
 	private boolean isFreeAXP() {
 		for (Unidade unidade : pecaAtual.unidades) {
-			if(this.cBoardM[unidade.y][(unidade.x + 1)] == this.ocupado) {
+			if(this.cBoardM[unidade.y][(unidade.x + 1)] != this.vazio) {
 				return false;
 			}
 		}
@@ -283,10 +337,16 @@ public class Board implements Concreto {
 	//X--
 	public void pecaXN() {
 		if(isFreeToMoveXN() && isFreeAXN()) {
-			this.pecaAtual.x -= 1;
-			for (Unidade unidade : pecaAtual.unidades) {
-				unidade.x -= 1;
-			}			
+			this.pecaXNM(pecaAtual);
+			this.pecaXNM(pecaAtualPrevisao);
+			this.pecaFPPrevisao();
+		}
+	}
+
+	private void pecaXNM(Peca peca) {
+		peca.x -= 1;
+		for (Unidade unidade : peca.unidades) {
+			unidade.x -= 1;
 		}
 	}
 	
@@ -303,59 +363,102 @@ public class Board implements Concreto {
 	//verifica colisao com outras pecas no eixo X - 1
 	private boolean isFreeAXN() {
 		for (Unidade unidade : pecaAtual.unidades) {
-			if(this.cBoardM[unidade.y][(unidade.x - 1)] == this.ocupado) {
+			if(this.cBoardM[unidade.y][(unidade.x - 1)] != this.vazio) {
 				return false;
 			}
 		}
 		return true;
 	}
 	
-	public void pecaFP() {
+	public void resetarYPrevisao() {
+		int quantidadeResetada = this.pecaAtual.y;
+		this.pecaAtualPrevisao.y = quantidadeResetada;
+		this.pecaAtualPrevisao.unidades = this.pecaAtual.clonarUnidades();
+	}
+	
+	public void pecaFPPrevisao() {
+		this.resetarYPrevisao();
 		if(!boardTravado) {
 			while(true) {
-				if(isFreeToMoveYP() && isFreeAYP()) {
-					this.pecaAtual.y += 1;
-					for (Unidade unidade : pecaAtual.unidades) {
+				if(isFreeToMoveYP(this.pecaAtualPrevisao) && isFreeAYP(this.pecaAtualPrevisao)) {
+					this.pecaAtualPrevisao.y += 1;
+					for (Unidade unidade : pecaAtualPrevisao.unidades) {
 						unidade.y += 1;
 					}	
 				}
 				else {
-					this.pecaCaindo = false;					
-					this.regra.pausarJogo();
-					updateBoard(cBoardM);
-					verificarLinhaCompletada();
-					updateBoard(cBoardM);
-					this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
-					this.regra.pausarJogo();
 					break;
+//					this.pecaCaindo = false;					
+//					this.regra.pausarJogo();
+//					updateBoard(cBoardM);
+//					verificarLinhaCompletada();
+//					updateBoard(cBoardM);
+//					this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
+//					this.regra.pausarJogo();
 				}
 			}
 		}
 	}
 	
+	public void pecaFP() {
+		if(!boardTravado) {
+			while(true) {
+				if(isFreeToMoveYP(this.pecaAtual) && isFreeAYP(this.pecaAtual)) {
+					this.pecaAtual.y += 1;
+					for (Unidade unidade : this.pecaAtual.unidades) {
+						unidade.y += 1;
+					}	
+				}
+				else {
+					this.game.renderizar = false;
+					this.pecaAtualPrevisao = null;
+					this.regra.pausarJogo();
+					this.pecaCaindo = false;
+					//delecao de linha
+					updateBoard(cBoardM);
+					this.boardThread = new Thread(this);
+					this.boardThread.start();
+//					verificarLinhaCompletada();
+					
+//					updateBoard(cBoardM);
+//					if(!boardTravado) {
+//						this.regra.tick();						
+//					}
+//					this.regra.pausarJogo();
+					
+					break;
+				}
+			}
+		}
+//		this.pecaFPPrevisao();
+	}
+	
 	//Y++
 	public void pecaYP() {
 		if(this.pecaCaindo) {
-			if(isFreeToMoveYP() && isFreeAYP()) {
+			if(isFreeToMoveYP(this.pecaAtual) && isFreeAYP(this.pecaAtual)) {
 				this.pecaAtual.y += 1;
-				for (Unidade unidade : pecaAtual.unidades) {
+				for (Unidade unidade : this.pecaAtual.unidades) {
 					unidade.y += 1;
 				}			
 			}
 			else {
+				this.game.renderizar = false;
+				this.pecaAtualPrevisao = null;
 				this.pecaCaindo = false;
 				this.regra.pausarJogo();
-				
 				//delecao de linha
 				updateBoard(cBoardM);
-				verificarLinhaCompletada();
-				updateBoard(cBoardM);
-				
-				this.pecaAtual = new Peca(0,0,TipoPeca.BLOCO_QUADRADO,99);
-				if(!boardTravado) {
-					this.regra.tick();				
-				}
-				this.regra.pausarJogo();
+				this.boardThread = new Thread(this);
+				this.boardThread.start();
+//				this.run();
+//				verificarLinhaCompletada();
+//				updateBoard(cBoardM);
+//				
+//				if(!boardTravado) {
+//					this.regra.tick();
+//				}
+//				this.regra.pausarJogo();
 			}
 		}
 	}
@@ -379,17 +482,21 @@ public class Board implements Concreto {
 			}
 		}
 		Collections.sort(linhas);
+		this.regra.linhasDeletadas += linhas.size();
+		this.regra.linhasDeletadasNivel += linhas.size();
+		this.regra.linhasDeletadasScore = linhas.size();
+//		System.out.println(linhas.size());
+//		this.game.speedGame = 1;
 		for (Integer linha : linhas) {
 			deletarLinha(linha);
 		}
-		
 	}
 	
 	private void deletarLinha(Integer linha) {
-		
 		lock.writeLock().lock();
 		try {
 			ArrayList<Unidade> listaOrganizada = new ArrayList<Unidade>();
+			
  			for (Peca peca : pecas) {
  				for (Unidade unidade : peca.unidades) {
  					if(unidade.y == linha) {
@@ -397,14 +504,16 @@ public class Board implements Concreto {
  					}										
 				}
 			}
+ 			
 			Collections.sort(listaOrganizada);
 			for (Unidade unidade : listaOrganizada) {
 				unidade.remover();
 				updateBoard(cBoardM);
 				this.game.renderizador.render();
 				try {
-					Thread.sleep(1000/5);
+					this.boardThread.sleep(1000/60);
 				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -430,8 +539,8 @@ public class Board implements Concreto {
 		}
 	}
 	//verifica colisao do board no eixo Y + 1
-	private boolean isFreeToMoveYP() {
-		for (Unidade unidade : pecaAtual.unidades) {
+	private boolean isFreeToMoveYP(Peca peca) {
+		for (Unidade unidade : peca.unidades) {
 			if(unidade.y + 1 >= 24) {
 				return false;
 			}
@@ -440,9 +549,9 @@ public class Board implements Concreto {
 	}
 	
 	//verifica colisao com outras pecas no eixo Y + 1
-	private boolean isFreeAYP() {
-		for (Unidade unidade : pecaAtual.unidades) {
-			if(this.cBoardM[unidade.y+1][(unidade.x)] == this.ocupado) {
+	private boolean isFreeAYP(Peca peca) {
+		for (Unidade unidade : peca.unidades) {
+			if(this.cBoardM[unidade.y+1][(unidade.x)] != this.vazio) {
 				return false;
 			}
 		}
@@ -455,8 +564,12 @@ public class Board implements Concreto {
         try {
         	this.cleanBoardM(board);
         	for (Peca peca : this.pecas) {
+        		
+        		char tipoCor = this.verificaTipoPeca(peca.tipoPeca);
+        		
         		for (Unidade unidade : peca.unidades) {
-        			board[unidade.y][unidade.x] = ocupado;
+        			
+        			board[unidade.y][unidade.x] = tipoCor;
         		}			
         	}
         } finally {
@@ -464,45 +577,152 @@ public class Board implements Concreto {
         }
 	}
 	
+	public char verificaTipoPeca (TipoPeca tipoPeca ) {
+		char tipoCor = 'v';
+		
+		switch (tipoPeca) {
+		case BLOCO_L: 
+			tipoCor = orange;
+			break;
+		case BLOCO_LI:
+			tipoCor = blue;
+			break;
+		case BLOCO_N:
+			tipoCor = red;
+			break;
+		case BLOCO_NI:
+			tipoCor = green;
+			break;
+		case BLOCO_PALITO:
+			tipoCor = cyan;
+			break;
+		case BLOCO_QUADRADO:
+			tipoCor = yellow;
+			break;
+		case BLOCO_T:
+			tipoCor = purple;
+			break;
+		}
+		return tipoCor;
+	}
+	
 	public void gameOver() {
 		this.gameOver = true;
 		this.pecaProx = null;
-		this.fillBoardTimed(ocupado, this.boardM);
+		this.pecaAtualPrevisao = null;
+		this.fillBoardTimed(white, this.boardM);//escolher cor
 		this.fillBoardTimed(vazio, this.boardM);
 	}
 	
 	@Override
-	public void render(Graphics graphics) {
+	public void render(Graphics2D graphics2D, int janelaWidth, int janelaHeight) {
+		
+		
+//		AffineTransform affineTransform = new AffineTransform();
+		
 		if(!gameOver) {
 			updateBoard(this.boardM);
 		}
 		
-		for (int y = 4; y < boardM.length; y++) {
-			
+		for (int y = 0; y < 5; y++) {			
+			for (int x = 0; x < 6; x++) {
+//				graphics2D.setColor(Color.darkGray);
+//				graphics2D.fillRect(((janelaWidth/3) + (x * 32))  , ((janelaHeight/10) + (y * 32)), 32, 32);	
+//				graphics2D.setColor(Color.gray);
+//				graphics2D.drawRect(((janelaWidth/3) + (x * 32))  , ((janelaHeight/10) + (y * 32)), 32, 32);
+			}
+		}
+		
+		for (int y = 4; y < boardM.length; y++) {			
 			for (int x = 0; x < boardM[0].length; x++) {
-				
 				if(boardM[y][x] == vazio) {
-					graphics.setColor(Color.BLACK);
-					graphics.fillRect((x + boardPosX) * width, (y - boardPosY) * height, width, height);	
-					graphics.setColor(Color.GRAY);
-					graphics.drawRect((x + boardPosX) * width, (y - boardPosY) * height, width, height);
-				}
-				
-				else {
-					graphics.setColor(Color.WHITE);
-					graphics.fillRect((x + boardPosX) * width, (y - boardPosY) * height, width, height);	
-					graphics.setColor(Color.BLACK);
-					graphics.drawRect((x + boardPosX) * width, (y - boardPosY) * height, width, height);
+					graphics2D.setColor(Color.darkGray);
+					graphics2D.fillRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (x * 33),
+										(int)(((janelaHeight * 50)/100) - ((10*33))) + ((y-4) * 33),
+											33, 33);
+					//(int)((janelaWidth * 4)/100) +
+					graphics2D.setColor(Color.lightGray);
+					graphics2D.drawRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (x * 33),
+										(int)(((janelaHeight * 50)/100) - ((10*33))) + ((y-4) * 33),
+											33, 33);
 				}
 			}
 		}
-		if(this.pecaProx != null) {
-			for (Unidade unidade : this.pecaProx.unidades) {
-				graphics.setColor(Color.WHITE);
-				graphics.fillRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);	
-				graphics.setColor(Color.BLACK);
-				graphics.drawRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);
+		
+//		if(this.pecaAtualPrevisao != null) {
+//			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
+//				graphics2D.setColor(Color.LIGHT_GRAY);
+//				graphics2D.fillRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);	
+//			}
+//		}
+		
+		for (int y = 4; y < boardM.length; y++) {
+			for (int x = 0; x < boardM[0].length; x++) {
+				if(boardM[y][x] != vazio) {
+					graphics2D.drawImage(this.retornaCor(boardM[y][x]),
+													  (int)(((janelaWidth * 50)/100) - ((5*33)-1)) + (x * 33),
+													  (int)(((janelaHeight * 50)/100) - ((10*33)-1)) + ((y-4) * 33), null);
+				}
 			}
 		}
+		
+//		if(this.pecaAtualPrevisao != null) {
+//			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
+//				graphics.setColor(Color.LIGHT_GRAY);
+//				graphics.fillRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);	
+//				graphics2D.setColor(Color.WHITE);
+//				graphics2D.drawRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);
+//			}
+//		}
+		
+//		if(this.pecaProx != null) {
+//			Color cor = this.retornaCor(verificaTipoPeca(this.pecaProx.tipoPeca));
+//			for (Unidade unidade : this.pecaProx.unidades) {
+//				graphics.setColor(Color.BLACK);
+//				graphics.fillRect((unidade.x + proxPecaPosX) * width + 6, (unidade.y - proxPecaPosY) * height + 6, width, height);	
+//				graphics.setColor(cor);
+//				graphics.fillRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);	
+//				graphics.setColor(Color.BLACK);
+//				graphics.drawRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);
+//			}
+//		}
+		
+	}
+
+	private BufferedImage retornaCor(char tipoPeca) {
+		switch (tipoPeca) {
+		case 'o':
+			return this.imgBlockYellow;
+		case 'i':
+			return this.imgBlockCyan;
+		case 's':
+			return this.imgBlockRed;
+		case 'z':
+			return this.imgBlockGreen;
+		case 'l':
+			return this.imgBlockOrange;
+		case 'j':
+			return this.imgBlockBlue;
+		case 't':
+			return this.imgBlockPurple;
+		case 'w':
+			return this.imgBlockBlack;
+		default :
+			return null;
+		}
+	}
+
+	@Override
+	public void run() {
+		Thread.currentThread().setName("TRD-BOARD");
+		this.game.teclado.tecladoLivre = false;
+		verificarLinhaCompletada();
+		updateBoard(cBoardM);
+		if(!boardTravado) {
+			this.regra.tick();						
+		}
+		this.game.renderizar = true;
+		this.game.teclado.tecladoLivre = true;
+		this.regra.pausarJogo();
 	}
 }
