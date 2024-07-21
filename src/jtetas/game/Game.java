@@ -11,8 +11,10 @@ import java.util.ArrayList;
 
 import jtetas.game.board.Board;
 import jtetas.game.input.Teclado;
+import jtetas.graphics.Concreto;
 import jtetas.graphics.Hud;
 import jtetas.graphics.Janela;
+import jtetas.graphics.Menu;
 import jtetas.graphics.Renderizador;
 import jtetas.graphics.TesteImage;
 
@@ -26,6 +28,7 @@ public class Game implements Runnable{
 	public Board board;
 	public Regra regra;
 	public Hud hud;
+	public Menu menu;
 //	public TesteImage testeImage;
 	public Thread gameThread;
 //	public Thread boardThread;
@@ -39,45 +42,109 @@ public class Game implements Runnable{
 	
 	public int speedGame = 75;
 	public boolean renderizar = true;
+	public boolean isMenu = true;
 	
 	public Game() {
 		init();
 	}
 	
 	private void init() {
-		this.entidades = new ArrayList<Entity>();
 		this.importFont();
+		
 		this.setWindowSize();
-		this.initComponents();
 		
+		this.initMainComponents();
+		
+		this.initMainConections();
+		
+		this.iniciarMenu();
+	}
+	
+	private void initMainComponents() {
+		this.entidades = new ArrayList<Entity>();
+		this.menu = new Menu(this);
+		this.teclado = new Teclado(this);
+		this.renderizador = new Renderizador(this.width, this.height);
+		this.janela = new Janela(this.renderizador, this.width, this.height);
+	}
+	
+	public void initMainConections() {
 		this.teclado.janela = this.janela;
-		
+		this.teclado.menu = this.menu;
 		this.renderizador.jFrame = this.janela;
-		this.renderizador.elementosRenderizadosList.add(board);
-		this.renderizador.elementosRenderizadosList.add(hud);
-		
-		this.regra.board = this.board;
-		this.regra.teclado = teclado;
-		this.regra.hud = this.hud;
-		
-		this.board.regra = this.regra;
-		this.entidades.add(regra);
-		
-		
-		this.regraThread = new Thread(regra);
-		this.regraThread.start();
 		this.renderizador.addKeyListener(teclado);
 		this.renderizador.requestFocusInWindow();
 	}
 	
-	private void initComponents() {
+	public void iniciarMenu() {
+		System.out.println("INICIAR MENU");
+		this.renderizador.renderizar = false;
+		this.renderizar = false;
+		this.isMenu = true;
+		
+		this.renderizador.elementosRenderizadosList.clear();
+		this.renderizador.elementosRenderizadosList.add(menu);
+		
+		this.renderizador.renderizar = true;
+		this.renderizar = true;
+	}
+	
+	
+	private void initGameComponents() {
 		this.hud = new Hud();
 		this.board = new Board(this.y, this.x, this);
-		this.regra = new Regra(this.board);
-		this.teclado = new Teclado(regra);
-		this.renderizador = new Renderizador(this.width, this.height);
-		this.janela = new Janela(this.renderizador, this.width, this.height);
+		this.regra = new Regra(this, this.board);
 	}
+	
+	private void initGameConections() {
+		this.regra.board = this.board;
+		this.regra.teclado = teclado;
+		this.regra.hud = this.hud;
+		this.board.regra = this.regra;
+		this.teclado.regra = this.regra;
+		this.entidades.add(regra);
+	}
+	
+	public void iniciarJogo() {
+		this.initGameComponents();
+		this.initGameConections();
+		
+		this.isMenu = false;
+		this.renderizador.renderizar = false;
+		this.renderizar = false;
+		
+		this.renderizador.elementosRenderizadosList.clear();
+		this.renderizador.elementosRenderizadosList.add(board);
+		this.renderizador.elementosRenderizadosList.add(hud);
+		
+		this.renderizador.renderizar = true;
+		this.renderizar = true;
+		this.board.reiniciarBoard(this.y, this.x);
+		this.regra.reiniciarRegra();
+		this.hud.reiniciarHud();
+		
+		this.iniciarRegraThread();
+	}
+
+	public void iniciarGameOver() {
+		this.menu.startGameOver();
+		this.renderizador.renderizar = false;
+		this.renderizar = false;
+		this.isMenu = true;
+		
+		this.renderizador.elementosRenderizadosList.clear();
+		this.renderizador.elementosRenderizadosList.add(menu);
+		
+		this.renderizador.renderizar = true;
+		this.renderizar = true;
+	}
+	
+	private void iniciarRegraThread() {
+		this.regraThread = new Thread(regra);
+		this.regraThread.start();
+	}
+	
+
 	
 	private void setWindowSize() {
 		Toolkit toolkit =  Toolkit.getDefaultToolkit ();
@@ -92,8 +159,8 @@ public class Game implements Runnable{
 	
 	private void importFont() {
 		try {
-		     GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		     ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("src/jtetas/resources/fonts/Symtext-9YmnL.ttf")));
+		     GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment(); 
+		     ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/fonts/Symtext-9YmnL.ttf")));
 		} catch (IOException|FontFormatException e) {
 		    e.printStackTrace();
 		}
@@ -102,6 +169,14 @@ public class Game implements Runnable{
 	@Override
 	public void run() {
 		Thread.currentThread().setName("TRD-GAME");
+		
+//		this.renderizador.init();
+//		try {
+//			Thread.sleep(1000/1);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+		
 		while(true) {
 			try {
 				if(renderizar) {
@@ -113,4 +188,5 @@ public class Game implements Runnable{
 			}
 		}
 	}
+
 }

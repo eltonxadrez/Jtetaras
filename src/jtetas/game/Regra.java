@@ -36,15 +36,34 @@ public class Regra implements Entity, Runnable {
 		this.board.pecaProx = puxarDaBolsaPeca();
 	}
 	
-	public Regra(Board board) {
+	public Regra(Game game, Board board) {
+		this.game = game;
 		this.board = board;
 		this.bolsaPeca = new ArrayList<Peca>();
 		this.board.pecaAtual = puxarDaBolsaPeca();
 		this.board.pecaProx = puxarDaBolsaPeca();
 	}
 	
+	public void reiniciarRegra() {
+		this.bolsaPeca = new ArrayList<Peca>();
+		this.board.pecaAtual = puxarDaBolsaPeca();
+		this.board.pecaProx = puxarDaBolsaPeca();
+		this.velocidadeQueda = 5;
+		this.idList = 0;
+		this.score = 0;
+		this.linhasDeletadas = 0;
+		this.linhasDeletadasNivel = 0;
+		this.linhasDeletadasScore = 0;
+		this.nivel = 1;
+		this.gameOver = false;
+		this.pausado = false;
+		this.rodarLoop = true;
+		this.rotacaoTravada = false;
+	}
+	
 	public void finalizarThread() {
 		rodarLoop = false;
+		this.game.iniciarGameOver();
 	}
 	
 	private Peca puxarDaBolsaPeca () {
@@ -78,43 +97,42 @@ public class Regra implements Entity, Runnable {
 				this.idList++;
 			}
 		}
-//		Collections.shuffle(bolsaPeca);
+		Collections.shuffle(bolsaPeca);
 //		Collections.shuffle(bolsaPeca);
 //		Collections.shuffle(bolsaPeca);
 	}
 	
 	//DELETAR
-	@SuppressWarnings("unused")
-	private Peca criarPecaAleatoria() {
-		
-		Peca pecaAleatoria = null;
-		int numeroAleatorio = (int) ((Math.random() * (8 - 1)) + 1);
-		
-		switch (numeroAleatorio) {
-		case 1: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_L, this.idList);
-			break;
-		case 2: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_LI, this.idList);
-			break;
-		case 3: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_QUADRADO, this.idList);
-			break;
-		case 4: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_N, this.idList);
-			break;
-		case 5: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_NI, this.idList);
-			break;
-		case 6: 
-			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_T, this.idList);
-			break;
-		case 7: 
-			pecaAleatoria = new Peca(4, 3, TipoPeca.BLOCO_PALITO, this.idList);
-			break;
-		}
-		return pecaAleatoria;
-	}
+//	private Peca criarPecaAleatoria() {
+//		
+//		Peca pecaAleatoria = null;
+//		int numeroAleatorio = (int) ((Math.random() * (8 - 1)) + 1);
+//		
+//		switch (numeroAleatorio) {
+//		case 1: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_L, this.idList);
+//			break;
+//		case 2: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_LI, this.idList);
+//			break;
+//		case 3: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_QUADRADO, this.idList);
+//			break;
+//		case 4: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_N, this.idList);
+//			break;
+//		case 5: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_NI, this.idList);
+//			break;
+//		case 6: 
+//			pecaAleatoria = new Peca(4, 4, TipoPeca.BLOCO_T, this.idList);
+//			break;
+//		case 7: 
+//			pecaAleatoria = new Peca(4, 3, TipoPeca.BLOCO_PALITO, this.idList);
+//			break;
+//		}
+//		return pecaAleatoria;
+//	}
 	
 	public boolean adicionarPeca(Peca peca) {
 		return this.board.adicionarPeca(peca);
@@ -157,10 +175,10 @@ public class Regra implements Entity, Runnable {
 				this.board.gameOver();
 			}
 		}
-		else if(this.gameOver) {
-			System.out.println("GAME OVER");
-			this.finalizarThread();
-		}
+//		else if(this.gameOver) {
+//			System.out.println("GAME OVER");
+//			this.finalizarThread();
+//		}
 		else {
 			this.board.pecaYP();
 		}

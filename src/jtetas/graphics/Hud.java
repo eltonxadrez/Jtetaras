@@ -11,27 +11,28 @@ public class Hud implements Concreto {
 	
 	public int score = 0;
 	public int nivel = 1;
-	public GraphicsEnvironment ge;
 	
 	private float posScoreSombraX = 50;
-	private float posScoreSombraY = 45;
+	private float posScoreSombraY = 40;
 	private float posNivelSombraX = 50;
-	private float posNivelSombraY = 50;
+	private float posNivelSombraY = 45;
 	
 	private float posScoreX = 50;
-	private float posScoreY = 45;
+	private float posScoreY = 40;
 	private float posNivelX = 50;
-	private float posNivelY = 50;
-	
+	private float posNivelY = 45;
 	
 	public Hud() {
-		this.ge = GraphicsEnvironment.getLocalGraphicsEnvironment();  
+		
+	}
+	
+	public void reiniciarHud() {
+		this.score = 0;
+		this.nivel = 1;
 	}
 	
 	@Override
 	public void render(Graphics2D graphics2d, int janelaWidth, int janelaHeight) {
-		Font valueFont = new Font("Symtext", Font.BOLD, 32);
-		graphics2d.setFont(valueFont);
 		
 		graphics2d.setColor(Color.BLACK);
 		graphics2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);

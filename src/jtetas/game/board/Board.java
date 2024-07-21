@@ -71,10 +71,10 @@ public class Board implements Concreto, Runnable {
 	private BufferedImage imgBlockPurple = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_PURPLE);
 	private BufferedImage imgBlockBlack = this.imageRepository.getImageRepo(ImageRepository.IMG_BLOCK_BLACK);
 	
-
-	public Board(int y, int x, Game game) {
 //		this.y = y;
 //		this.x = x;
+
+	public Board(int y, int x, Game game) {
 		
 		this.game = game;
 		
@@ -102,6 +102,24 @@ public class Board implements Concreto, Runnable {
 		this.palitoRotate = true;
 		this.boardTravado = false;
 		this.gameOver = false;
+	}
+	
+	public void reiniciarBoard(int y, int x) {
+		this.pecas = new ArrayList<Peca>();
+		this.createBoardM(y, x);
+		this.createCBoardM(y, x);
+		this.gameOver = false;
+		this.boardTravado = false;
+	}
+	
+	
+	public void gameOver() {
+		this.gameOver = true;
+		this.pecaProx = null;
+		this.pecaAtualPrevisao = null;
+		this.fillBoardTimed(white, this.boardM);//escolher cor
+		this.fillBoardTimed(vazio, this.boardM);
+		this.regra.finalizarThread();
 	}
 	
 	public void createCBoardM(int y, int x) {
@@ -606,19 +624,8 @@ public class Board implements Concreto, Runnable {
 		return tipoCor;
 	}
 	
-	public void gameOver() {
-		this.gameOver = true;
-		this.pecaProx = null;
-		this.pecaAtualPrevisao = null;
-		this.fillBoardTimed(white, this.boardM);//escolher cor
-		this.fillBoardTimed(vazio, this.boardM);
-	}
-	
 	@Override
 	public void render(Graphics2D graphics2D, int janelaWidth, int janelaHeight) {
-		
-		
-//		AffineTransform affineTransform = new AffineTransform();
 		
 		if(!gameOver) {
 			updateBoard(this.boardM);
@@ -626,22 +633,26 @@ public class Board implements Concreto, Runnable {
 		
 		for (int y = 0; y < 5; y++) {			
 			for (int x = 0; x < 6; x++) {
-//				graphics2D.setColor(Color.darkGray);
-//				graphics2D.fillRect(((janelaWidth/3) + (x * 32))  , ((janelaHeight/10) + (y * 32)), 32, 32);	
-//				graphics2D.setColor(Color.gray);
-//				graphics2D.drawRect(((janelaWidth/3) + (x * 32))  , ((janelaHeight/10) + (y * 32)), 32, 32);
+				graphics2D.setColor(new Color(50, 50, 50));
+				graphics2D.fillRect((int)(((janelaWidth * 50)/100) - ((5*33)) + 355) + (x * 33),
+									(int)(((janelaHeight * 50)/100) - ((10*33)) + 5) + ((y) * 33),
+										33, 33);
+				graphics2D.setColor(new Color(40, 40, 40));
+				graphics2D.drawRect((int)(((janelaWidth * 50)/100) - ((5*33)) + 350) + (x * 33),
+									(int)(((janelaHeight * 50)/100) - ((10*33)) ) + ((y) * 33),
+										33, 33);
 			}
 		}
 		
 		for (int y = 4; y < boardM.length; y++) {			
 			for (int x = 0; x < boardM[0].length; x++) {
 				if(boardM[y][x] == vazio) {
-					graphics2D.setColor(Color.darkGray);
-					graphics2D.fillRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (x * 33),
-										(int)(((janelaHeight * 50)/100) - ((10*33))) + ((y-4) * 33),
+					graphics2D.setColor(new Color(50, 50, 50));
+					graphics2D.fillRect((int)(((janelaWidth * 50)/100) - ((5*33)) + 5) + (x * 33),
+										(int)(((janelaHeight * 50)/100) - ((10*33)) + 5) + ((y-4) * 33),
 											33, 33);
-					//(int)((janelaWidth * 4)/100) +
-					graphics2D.setColor(Color.lightGray);
+					//new Color(25, 25, 25)
+					graphics2D.setColor(new Color(40, 40, 40));
 					graphics2D.drawRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (x * 33),
 										(int)(((janelaHeight * 50)/100) - ((10*33))) + ((y-4) * 33),
 											33, 33);
@@ -649,12 +660,14 @@ public class Board implements Concreto, Runnable {
 			}
 		}
 		
-//		if(this.pecaAtualPrevisao != null) {
-//			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
-//				graphics2D.setColor(Color.LIGHT_GRAY);
-//				graphics2D.fillRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);	
-//			}
-//		}
+		if(this.pecaAtualPrevisao != null) {
+			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
+				graphics2D.setColor(new Color(75, 75, 75));
+				graphics2D.fillRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (unidade.x * 33),
+						(int)(((janelaHeight * 50)/100) - ((10*33))) + ((unidade.y-4) * 33),
+						33, 33);
+			}
+		}
 		
 		for (int y = 4; y < boardM.length; y++) {
 			for (int x = 0; x < boardM[0].length; x++) {
@@ -666,26 +679,40 @@ public class Board implements Concreto, Runnable {
 			}
 		}
 		
-//		if(this.pecaAtualPrevisao != null) {
-//			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
+		if(this.pecaAtualPrevisao != null) {
+			for (Unidade unidade : this.pecaAtualPrevisao.unidades) {
 //				graphics.setColor(Color.LIGHT_GRAY);
 //				graphics.fillRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);	
+				graphics2D.setColor(new Color(125, 125, 125));
+				graphics2D.drawRect((int)(((janelaWidth * 50)/100) - ((5*33))) + (unidade.x * 33),
+						(int)(((janelaHeight * 50)/100) - ((10*33))) + ((unidade.y-4) * 33),
+						33, 33);
+				
 //				graphics2D.setColor(Color.WHITE);
 //				graphics2D.drawRect((unidade.x + boardPosX) * width, (unidade.y - boardPosY) * height, width, height);
-//			}
-//		}
+			}
+		}
 		
-//		if(this.pecaProx != null) {
+		if(this.pecaProx != null) {
 //			Color cor = this.retornaCor(verificaTipoPeca(this.pecaProx.tipoPeca));
-//			for (Unidade unidade : this.pecaProx.unidades) {
+			for (Unidade unidade : this.pecaProx.unidades) {
 //				graphics.setColor(Color.BLACK);
 //				graphics.fillRect((unidade.x + proxPecaPosX) * width + 6, (unidade.y - proxPecaPosY) * height + 6, width, height);	
+				
+				graphics2D.drawImage(this.retornaCor(verificaTipoPeca(this.pecaProx.tipoPeca)),
+						  (int)(((janelaWidth * 50)/100) - ((5*33) - 285)) + (unidade.x * 33),
+						  (int)(((janelaHeight * 50)/100) - ((10*33) - 67)) + ((unidade.y-4) * 33), null);
+				
 //				graphics.setColor(cor);
 //				graphics.fillRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);	
+//				
 //				graphics.setColor(Color.BLACK);
 //				graphics.drawRect((unidade.x + proxPecaPosX) * width, (unidade.y - proxPecaPosY) * height, width, height);
-//			}
-//		}
+			}
+		}
+		
+		//debug
+		
 		
 	}
 
