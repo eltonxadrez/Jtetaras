@@ -1,2 +1,2 @@
-# Jtetas
-tetas em java
+# Jtetaras
+tetaras em java
